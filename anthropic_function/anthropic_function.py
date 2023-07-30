@@ -276,10 +276,9 @@ FUNCTION get_current_weather(location: \'Boston\', unit: \'fahrenheit\')
 
 If no function call is needed, converse like you would otherwise."""
 
-    conversation = ""
-    for message in messages:
-      conversation += f'\n\n{message["role"].capitalize()}: {message["content"]}'
-
+    conversation = "".join(
+        f'\n\n{message["role"].capitalize()}: {message["content"]}'
+        for message in messages)
     prompt = f"{prompt_prefix}{conversation}\n\nAssistant:"
 
     response = self.anthropic.completions.create(
@@ -293,13 +292,11 @@ If no function call is needed, converse like you would otherwise."""
 
     print(output)
 
-    if output.startswith("FUNCTION "):
-      # It's trying to call a function, so we parse the function name and arguments
-      function_call = output[len("FUNCTION "):]
-      return {"function": function_call}
-        
-    else:
+    if not output.startswith("FUNCTION "):
       return {"response": output, "function": None, "arguments": None}
+    # It's trying to call a function, so we parse the function name and arguments
+    function_call = output[len("FUNCTION "):]
+    return {"function": function_call}
 
   def describe_function_output(self, function_name, function_arguments,
                                function_output, previous_messages):
@@ -318,7 +315,4 @@ If no function call is needed, converse like you would otherwise."""
     }
     previous_messages.append(new_message)
 
-    # Call the model again
-    response = self.call(previous_messages)
-
-    return response
+    return self.call(previous_messages)
